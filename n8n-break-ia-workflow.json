@@ -1,0 +1,226 @@
+{
+  "name": "Break_IA Alert System",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "break-ia-alert",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-start",
+      "name": "Webhook - Break_IA Alert",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "break-ia-alert"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.riskLevel }}",
+              "operation": "equal",
+              "value2": "CRITICAL"
+            }
+          ]
+        }
+      },
+      "id": "check-critical",
+      "name": "¿Es Crítico?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.riskLevel }}",
+              "operation": "equal", 
+              "value2": "HIGH"
+            }
+          ]
+        }
+      },
+      "id": "check-high",
+      "name": "¿Es Alto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 500]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.ADMIN_CHAT_ID }}",
+        "text": "🚨 **ALERTA CRÍTICA - Break_IA**\n\n👤 Usuario: {{ $json.userId }}\n📝 Mensaje: {{ $json.message }}\n⚠️ Nivel: {{ $json.riskLevel }}\n📊 Score: {{ $json.score }}\n🎯 Triggers: {{ $json.triggers }}\n⏰ Tiempo: {{ $json.timestamp }}\n\n**🚨 ACCIÓN REQUERIDA: Contacto inmediato**\n\n📞 Líneas de emergencia:\n• Emergencias: 112\n• Teléfono Esperanza: 91 459 00 50\n• Línea 024: Prevención suicidio"
+      },
+      "id": "telegram-critical",
+      "name": "🚨 Telegram Crítico",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [680, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-break-ia",
+          "name": "Break_IA Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.ADMIN_CHAT_ID }}",
+        "text": "⚠️ **ALERTA ALTA - Break_IA**\n\n👤 Usuario: {{ $json.userId }}\n📝 Mensaje: {{ $json.message }}\n⚠️ Nivel: {{ $json.riskLevel }}\n📊 Score: {{ $json.score }}\n🎯 Triggers: {{ $json.triggers }}\n⏰ Tiempo: {{ $json.timestamp }}\n\n**📋 Seguimiento recomendado en 24h**"
+      },
+      "id": "telegram-high",
+      "name": "⚠️ Telegram Alto",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [680, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-break-ia",
+          "name": "Break_IA Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/risk_alerts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type", 
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "{{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "{\n  \"user_id\": \"{{ $json.userId }}\",\n  \"risk_level\": \"{{ $json.riskLevel }}\",\n  \"risk_score\": {{ $json.score }},\n  \"triggers\": {{ JSON.stringify($json.triggers) }},\n  \"message_content\": \"{{ $json.message }}\",\n  \"alert_sent\": true,\n  \"processed_by\": \"n8n\",\n  \"status\": \"processed\"\n}"
+      },
+      "id": "save-supabase",
+      "name": "💾 Guardar en Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"message\": \"Alerta procesada por n8n\",\n  \"riskLevel\": \"{{ $json.riskLevel }}\",\n  \"alertSent\": true,\n  \"processedAt\": \"{{ new Date().toISOString() }}\",\n  \"webhookUrl\": \"https://n8n-production-020f.up.railway.app/webhook/break-ia-alert\"\n}"
+      },
+      "id": "response",
+      "name": "📤 Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Break_IA Alert": {
+      "main": [
+        [
+          {
+            "node": "¿Es Crítico?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es Crítico?": {
+      "main": [
+        [
+          {
+            "node": "🚨 Telegram Crítico",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Es Alto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es Alto?": {
+      "main": [
+        [
+          {
+            "node": "⚠️ Telegram Alto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "💾 Guardar en Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🚨 Telegram Crítico": {
+      "main": [
+        [
+          {
+            "node": "💾 Guardar en Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚠️ Telegram Alto": {
+      "main": [
+        [
+          {
+            "node": "💾 Guardar en Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Guardar en Supabase": {
+      "main": [
+        [
+          {
+            "node": "📤 Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2025-11-02T07:30:00.000Z",
+  "updatedAt": "2025-11-02T07:30:00.000Z",
+  "settings": {
+    "timezone": "Europe/Madrid"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-11-02T07:30:00.000Z",
+      "updatedAt": "2025-11-02T07:30:00.000Z",
+      "id": "break-ia",
+      "name": "Break_IA"
+    }
+  ]
+}

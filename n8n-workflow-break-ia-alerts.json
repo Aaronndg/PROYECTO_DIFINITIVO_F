@@ -1,0 +1,373 @@
+{
+  "name": "Break_IA - Sistema de Alertas de Riesgo",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "break-ia-alert",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300],
+      "webhookId": "break-ia-alert"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "={{ $json.riskLevel }}",
+            "operation": "equal",
+            "rightValue": "CRITICAL"
+          }
+        }
+      },
+      "id": "check-critical",
+      "name": "¿Es Crítico?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "={{ $json.riskLevel }}",
+            "operation": "equal",
+            "rightValue": "HIGH"
+          }
+        }
+      },
+      "id": "check-high",
+      "name": "¿Es Alto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [400, 500]
+    },
+    {
+      "parameters": {
+        "chatId": "{{ process.env.TELEGRAM_ADMIN_CHAT_ID }}",
+        "text": "🚨 **ALERTA CRÍTICA - Break_IA**\\n\\n👤 Usuario: {{ $json.userId }}\\n📝 Mensaje: {{ $json.message }}\\n⚠️ Nivel: {{ $json.riskLevel }}\\n📊 Score: {{ $json.score }}\\n🎯 Triggers: {{ $json.triggers.join(', ') }}\\n⏰ Tiempo: {{ $json.timestamp }}\\n\\n**ACCIÓN REQUERIDA: Contacto inmediato**"
+      },
+      "id": "telegram-critical",
+      "name": "Alerta Crítica Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [600, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot-credentials",
+          "name": "Break_IA Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "{{ process.env.TELEGRAM_ADMIN_CHAT_ID }}",
+        "text": "⚠️ **ALERTA ALTA - Break_IA**\\n\\n👤 Usuario: {{ $json.userId }}\\n📝 Mensaje: {{ $json.message }}\\n⚠️ Nivel: {{ $json.riskLevel }}\\n📊 Score: {{ $json.score }}\\n🎯 Triggers: {{ $json.triggers.join(', ') }}\\n⏰ Tiempo: {{ $json.timestamp }}\\n\\n**Seguimiento recomendado en 24h**"
+      },
+      "id": "telegram-high",
+      "name": "Alerta Alta Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [600, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot-credentials",
+          "name": "Break_IA Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "to": "{{ process.env.ADMIN_EMAIL }}",
+        "subject": "🚨 ALERTA CRÍTICA - Break_IA - Usuario en Riesgo",
+        "text": "Se ha detectado una situación crítica en Break_IA:\\n\\nUsuario: {{ $json.userId }}\\nNivel de Riesgo: {{ $json.riskLevel }}\\nScore: {{ $json.score }}\\nTriggers: {{ $json.triggers.join(', ') }}\\nMensaje: {{ $json.message }}\\nFecha: {{ $json.timestamp }}\\n\\nSe requiere intervención inmediata."
+      },
+      "id": "email-critical",
+      "name": "Email Crítico",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [800, 200],
+      "credentials": {
+        "smtp": {
+          "id": "email-credentials",
+          "name": "Break_IA SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "{{ process.env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": {
+          "text": "🚨 ALERTA CRÍTICA - Break_IA",
+          "attachments": [
+            {
+              "color": "danger",
+              "fields": [
+                {
+                  "title": "Usuario",
+                  "value": "{{ $json.userId }}",
+                  "short": true
+                },
+                {
+                  "title": "Nivel de Riesgo",
+                  "value": "{{ $json.riskLevel }}",
+                  "short": true
+                },
+                {
+                  "title": "Score",
+                  "value": "{{ $json.score }}",
+                  "short": true
+                },
+                {
+                  "title": "Timestamp",
+                  "value": "{{ $json.timestamp }}",
+                  "short": true
+                },
+                {
+                  "title": "Triggers",
+                  "value": "{{ $json.triggers.join(', ') }}",
+                  "short": false
+                },
+                {
+                  "title": "Mensaje",
+                  "value": "{{ $json.message }}",
+                  "short": false
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "id": "slack-notification",
+      "name": "Notificación Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1000, 200]
+    },
+    {
+      "parameters": {
+        "url": "{{ process.env.SUPABASE_URL }}/rest/v1/risk_alerts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ process.env.SUPABASE_SERVICE_ROLE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "{{ process.env.SUPABASE_ANON_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": {
+          "user_id": "{{ $json.userId }}",
+          "risk_level": "{{ $json.riskLevel }}",
+          "risk_score": "{{ $json.score }}",
+          "triggers": "{{ $json.triggers }}",
+          "message_content": "{{ $json.message }}",
+          "alert_sent": true,
+          "processed_by": "n8n",
+          "created_at": "{{ $json.timestamp }}"
+        }
+      },
+      "id": "save-to-supabase",
+      "name": "Guardar en Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [600, 600]
+    },
+    {
+      "parameters": {
+        "content": "{{ $json }}",
+        "options": {}
+      },
+      "id": "response",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "amount": 300,
+        "unit": "seconds"
+      },
+      "id": "wait-5min",
+      "name": "Esperar 5 min",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [600, 800]
+    },
+    {
+      "parameters": {
+        "chatId": "{{ $json.userId }}",
+        "text": "💙 Hola, soy el asistente de Break_IA. He notado que has tenido un momento difícil. ¿Cómo te sientes ahora?\\n\\nRecuerda que estamos aquí para apoyarte. Si necesitas hablar con alguien, estas líneas pueden ayudarte:\\n\\n📞 Teléfono de la Esperanza: 91 459 00 50\\n📞 Línea 024: Atención al comportamiento suicida\\n\\n🙏 'Cercano está Jehová a los quebrantados de corazón' - Salmo 34:18"
+      },
+      "id": "follow-up-telegram",
+      "name": "Seguimiento Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [800, 800],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot-credentials",
+          "name": "Break_IA Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "¿Es Crítico?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es Crítico?": {
+      "main": [
+        [
+          {
+            "node": "Alerta Crítica Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Es Alto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es Alto?": {
+      "main": [
+        [
+          {
+            "node": "Alerta Alta Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Guardar en Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alerta Crítica Telegram": {
+      "main": [
+        [
+          {
+            "node": "Email Crítico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Crítico": {
+      "main": [
+        [
+          {
+            "node": "Notificación Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alerta Alta Telegram": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en Supabase": {
+      "main": [
+        [
+          {
+            "node": "Esperar 5 min",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notificación Slack": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar 5 min": {
+      "main": [
+        [
+          {
+            "node": "Seguimiento Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Seguimiento Telegram": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2025-11-02T06:00:00.000Z",
+  "updatedAt": "2025-11-02T06:00:00.000Z",
+  "settings": {
+    "timezone": "America/Mexico_City"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-11-02T06:00:00.000Z",
+      "updatedAt": "2025-11-02T06:00:00.000Z",
+      "id": "break-ia-alerts",
+      "name": "Break_IA Alerts"
+    }
+  ]
+}
