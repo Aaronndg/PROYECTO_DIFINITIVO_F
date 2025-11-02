@@ -14,6 +14,14 @@ export async function POST(request: NextRequest) {
       notes 
     } = await request.json()
 
+    // Verificar que supabaseAdmin esté disponible
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client no está configurado')
+      return NextResponse.json(
+        { error: 'Error de configuración del servidor' },
+        { status: 500 }
+      )
+    }
     if (!userId || moodScore === undefined) {
       return NextResponse.json(
         { error: 'ID de usuario y puntuación de estado de ánimo son requeridos' },
@@ -102,6 +110,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'ID de usuario es requerido' },
         { status: 400 }
+      )
+    }
+
+    // Verificar que supabaseAdmin esté disponible
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client no está configurado')
+      return NextResponse.json(
+        { error: 'Error de configuración del servidor' },
+        { status: 500 }
       )
     }
 

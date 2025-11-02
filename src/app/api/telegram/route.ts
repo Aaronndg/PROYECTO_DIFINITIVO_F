@@ -13,6 +13,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Verificar que supabaseAdmin esté disponible para acciones que lo necesiten
+    if ((action === 'send_progress_update' || action === 'log_interaction') && !supabaseAdmin) {
+      console.error('Supabase admin client no está configurado')
+      return NextResponse.json(
+        { error: 'Error de configuración del servidor' },
+        { status: 500 }
+      )
+    }
+
     switch (action) {
       case 'send_daily_verse':
         await telegramBot.sendDailyVerse(

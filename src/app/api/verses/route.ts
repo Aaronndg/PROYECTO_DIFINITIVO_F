@@ -10,6 +10,15 @@ export async function GET(request: NextRequest) {
     const version = searchParams.get('version') || 'rv60'
     const query = searchParams.get('query')
 
+    // Verificar que supabaseAdmin esté disponible
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client no está configurado')
+      return NextResponse.json(
+        { error: 'Error de configuración del servidor' },
+        { status: 500 }
+      )
+    }
+
     // Usar datos mock en desarrollo
     if (process.env.ENABLE_MOCK_DATA === 'true') {
       console.log('Using mock data for verses API')
