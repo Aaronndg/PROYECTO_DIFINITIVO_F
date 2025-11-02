@@ -124,6 +124,15 @@ export async function POST(request: NextRequest) {
       // Continuar sin embedding si falla
     }
 
+    // Verificación adicional antes de usar supabaseAdmin
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client no disponible en POST verse')
+      return NextResponse.json(
+        { error: 'Error de configuración del servidor' },
+        { status: 500 }
+      )
+    }
+
     const { data: verse, error } = await supabaseAdmin
       .from('biblical_verses')
       .insert({
