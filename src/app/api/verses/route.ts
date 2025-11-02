@@ -104,6 +104,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Verificar que supabaseAdmin esté disponible
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client no está configurado')
+      return NextResponse.json(
+        { error: 'Error de configuración del servidor' },
+        { status: 500 }
+      )
+    }
+
     // Crear embedding para el versículo
     const embeddingText = `${reference} ${text_rv60} ${emotion_tags?.join(' ') || ''} ${category || ''}`
     
