@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
       case 'send_progress_update':
         // Obtener datos de progreso del usuario
-        if (userId) {
+        if (userId && supabaseAdmin) {
           const { data: recentTests } = await supabaseAdmin
             .from('emotional_tests')
             .select('mood_score, test_date')
@@ -71,6 +71,13 @@ export async function POST(request: NextRequest) {
 
       case 'register_chat':
         // Asociar chat ID con usuario
+        if (!supabaseAdmin) {
+          return NextResponse.json(
+            { error: 'Error de configuración del servidor' },
+            { status: 500 }
+          )
+        }
+        
         const { error } = await supabaseAdmin
           .from('user_telegram')
           .upsert({
