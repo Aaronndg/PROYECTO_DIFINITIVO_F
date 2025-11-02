@@ -38,6 +38,11 @@ export async function searchSimilarVerses(
   }
 
   try {
+    // Verificar que supabaseAdmin esté disponible
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client no está configurado')
+    }
+    
     // Crear embedding para la query
     const searchText = emotion ? `${query} ${emotion}` : query
     const queryEmbedding = await createEmbedding(searchText)

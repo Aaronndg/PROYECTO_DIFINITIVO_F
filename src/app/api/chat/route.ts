@@ -16,6 +16,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Verificar que supabaseAdmin esté disponible
+    if (!supabaseAdmin) {
+      console.error('Supabase admin client no está configurado')
+      return NextResponse.json(
+        { error: 'Error de configuración del servidor' },
+        { status: 500 }
+      )
+    }
+
     // Usar datos mock en desarrollo
     if (process.env.ENABLE_MOCK_DATA === 'true') {
       console.log('Using mock data for chat API')
