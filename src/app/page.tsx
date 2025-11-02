@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Heart, BookOpen, MessageCircle, BarChart3, Bot } from "lucide-react";
 
+// Force Vercel rebuild - v1.0.1 with TypeScript fixes
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
