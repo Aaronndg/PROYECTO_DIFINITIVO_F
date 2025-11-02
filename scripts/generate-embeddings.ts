@@ -22,6 +22,11 @@ interface Verse {
 async function generateEmbeddingsForAllVerses() {
   console.log('🔄 Iniciando generación de embeddings para versículos bíblicos...')
   
+  // Verificar que supabaseAdmin esté disponible
+  if (!supabaseAdmin) {
+    throw new Error('Supabase admin client no está configurado. Verifica las variables de entorno.')
+  }
+  
   try {
     // Obtener todos los versículos sin embeddings
     const { data: verses, error } = await supabaseAdmin
@@ -93,6 +98,11 @@ async function generateEmbeddingsForAllVerses() {
 
 async function testVectorSearch() {
   console.log('\n🧪 Ejecutando prueba de búsqueda vectorial...')
+  
+  // Verificar que supabaseAdmin esté disponible
+  if (!supabaseAdmin) {
+    throw new Error('Supabase admin client no está configurado. Verifica las variables de entorno.')
+  }
   
   try {
     const testQuery = 'me siento muy triste y necesito consuelo'
